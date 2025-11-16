@@ -25,32 +25,23 @@ jobs:
           cd /home/oliviaapi/api/blog-app
           
           # Clone the repository if it doesn't exist, otherwise pull latest changes
-          if [ -d "platform-server" ]; then
+          if [ -d "websocket-server" ]; then
             echo "Repository exists, pulling latest changes..."
-            cd platform-server
+            cd websocket-server
             git pull origin main
           else
             echo "Cloning repository..."
-            git https://github.com/Ahmadhaff/blog-plateform-websocket-backend-.git
-            cd platform-server
+            git clone https://github.com/Ahmadhaff/blog-plateform-websocket-backend-.git websocket-server
+            cd websocket-server
           fi
           
-          # Install dependencies (uncomment based on your tech stack)
-          # For Node.js:
-          # npm install
+          # Install dependencies for Node.js
+          npm install
+          
+          # Optional: Build if needed
           # npm run build
           
-          # For Python:
-          # python3 -m venv venv
-          # source venv/bin/activate
-          # pip install -r requirements.txt
-          
-          # For Docker:
-          # docker-compose down
-          # docker-compose up -d --build
-          
-          # Restart your application (uncomment based on your process manager)
-          # pm2 restart platform-server
-          # systemctl --user restart platform-server
+          # Restart your application with PM2
+          # pm2 restart websocket-server || pm2 start src/app.js --name websocket-server
           
           echo "Deployment completed successfully!"
