@@ -1,0 +1,21 @@
+{
+  "name": "websocket-server",
+  "version": "1.0.0",
+  "description": "WebSocket Server for Real-time Features",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.6.1",
+    "mongoose": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "redis": "^4.6.0",
+    "amqplib": "^0.10.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
