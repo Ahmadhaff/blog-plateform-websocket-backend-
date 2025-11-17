@@ -31,10 +31,24 @@ const io = socketIO(server, {
         return callback(null, true);
       }
       console.log(`❌ WebSocket CORS: Blocked origin: ${origin}`);
+      console.log(`✅ Allowed origins:`, allowedOrigins);
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type']
+  },
+  // Better compatibility with Render.com and proxies
+  transports: ['polling', 'websocket'], // Polling first for better proxy compatibility
+  allowEIO3: true, // Allow Engine.IO v3 clients
+  pingTimeout: 60000, // 60 seconds (longer for production)
+  pingInterval: 25000, // 25 seconds
+  upgradeTimeout: 30000, // 30 seconds for upgrade to websocket
+  // Handle connection state properly
+  connectionStateRecovery: {
+    // Enable connection state recovery
+    maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+    skipMiddlewares: true
   }
 });
 
