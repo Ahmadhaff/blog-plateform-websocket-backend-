@@ -12,7 +12,31 @@ const notificationHandler = require('./handlers/notificationHandler');
 const typingHandler = require('./handlers/typingHandler');
 const articleHandler = require('./handlers/articleHandler');
 
-const server = http.createServer();
+const server = http.createServer((req, res) => {
+  // Health check endpoint for Render.com and monitoring
+  // This prevents Render.com from marking the service as inactive
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'OK',
+      service: 'websocket-server',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    }));
+    return;
+  }
+
+  // Let Socket.IO handle its own paths (/socket.io/*)
+  // For other paths, return 404
+  if (!req.url.startsWith('/socket.io/')) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return;
+  }
+  
+  // Socket.IO will handle /socket.io/* paths through its middleware
+  // We don't need to do anything here for Socket.IO requests
+});
 
 // Configure CORS for WebSocket
 const allowedOrigins = [
