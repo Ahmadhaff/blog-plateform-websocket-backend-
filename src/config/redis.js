@@ -3,16 +3,36 @@ const redis = require('redis');
 let redisClient = null;
 
 const connectRedis = async () => {
-  redisClient = redis.createClient({
-    url: process.env.REDIS_URL,
-    password: process.env.REDIS_PASSWORD || undefined
-  });
+  const redisUrl = process.env.REDIS_URL;
+  
+  // Check if URL uses rediss:// (Redis over TLS)
+  const useTLS = redisUrl && redisUrl.startsWith('rediss://');
+  
+  const clientConfig = {
+    url: redisUrl
+  };
+  
+  // Only add TLS config if using rediss://
+  if (useTLS) {
+    clientConfig.socket = {
+      tls: true,
+      rejectUnauthorized: true
+    };
+  }
+
+  redisClient = redis.createClient(clientConfig);
 
   redisClient.on('error', (err) => console.error('❌ Redis Error:', err));
   redisClient.on('connect', () => console.log('✅ Redis connected'));
+  redisClient.on('reconnecting', () => console.log('🔄 Redis reconnecting...'));
 
-  await redisClient.connect();
-  return redisClient;
+  try {
+    await redisClient.connect();
+    return redisClient;
+  } catch (error) {
+    console.error('❌ Redis connection failed:', error);
+    throw error;
+  }
 };
 
 const getRedisClient = () => {
@@ -22,4 +42,4 @@ const getRedisClient = () => {
   return redisClient;
 };
 
-module.exports = { connectRedis, getRedisClient };
+module.exports = { getRedisClient, connectRedis };
