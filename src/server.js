@@ -16,9 +16,10 @@ const server = http.createServer();
 
 // Configure CORS for WebSocket
 const allowedOrigins = [
-  'http://localhost:4200',
-  'http://localhost:4201',
-  'https://blogplateform.netlify.app',
+  'http://localhost:4200',  // Main frontend (dev)
+  'http://localhost:4201',  // Admin panel frontend (dev)
+  'https://blogplateform.netlify.app',  // Main frontend (production)
+  'https://adminpanelblogapp.netlify.app',  // Admin panel frontend (production)
   process.env.CLIENT_URL,
   ...(process.env.CLIENT_URLS ? process.env.CLIENT_URLS.split(',') : [])
 ].filter(Boolean);
