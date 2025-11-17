@@ -3,36 +3,30 @@ const redis = require('redis');
 let redisClient = null;
 
 const connectRedis = async () => {
+  // If REDIS_URL contains credentials (rediss:// or redis:// with @), use only URL
+  // Otherwise, use separate password option
   const redisUrl = process.env.REDIS_URL;
+  const hasCredentialsInUrl = redisUrl && (redisUrl.includes('@') || redisUrl.includes('://'));
   
-  // Check if URL uses rediss:// (Redis over TLS)
-  const useTLS = redisUrl && redisUrl.startsWith('rediss://');
-  
-  const clientConfig = {
-    url: redisUrl
-  };
-  
-  // Only add TLS config if using rediss://
-  if (useTLS) {
-    clientConfig.socket = {
-      tls: true,
-      rejectUnauthorized: true
-    };
-  }
+  const clientOptions = hasCredentialsInUrl
+    ? { url: redisUrl }
+    : {
+        url: redisUrl || 'redis://localhost:6379',
+        password: process.env.REDIS_PASSWORD || undefined
+      };
 
-  redisClient = redis.createClient(clientConfig);
+  redisClient = redis.createClient(clientOptions);
 
   redisClient.on('error', (err) => console.error('❌ Redis Error:', err));
-  redisClient.on('connect', () => console.log('✅ Redis connected'));
-  redisClient.on('reconnecting', () => console.log('🔄 Redis reconnecting...'));
+  redisClient.on('connect', () => {
+    console.log('✅ Redis connected');
+  });
+  redisClient.on('reconnecting', () => {
+    console.log('🔄 Redis reconnecting...');
+  });
 
-  try {
-    await redisClient.connect();
-    return redisClient;
-  } catch (error) {
-    console.error('❌ Redis connection failed:', error);
-    throw error;
-  }
+  await redisClient.connect();
+  return redisClient;
 };
 
 const getRedisClient = () => {
@@ -42,4 +36,4 @@ const getRedisClient = () => {
   return redisClient;
 };
 
-module.exports = { getRedisClient, connectRedis };
+module.exports = { connectRedis, getRedisClient };
