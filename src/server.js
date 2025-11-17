@@ -14,10 +14,26 @@ const articleHandler = require('./handlers/articleHandler');
 
 const server = http.createServer();
 
+// Configure CORS for WebSocket
+const allowedOrigins = [
+  'http://localhost:4200',
+  'http://localhost:4201',
+  'https://blogplateform.netlify.app',
+  process.env.CLIENT_URL,
+  ...(process.env.CLIENT_URLS ? process.env.CLIENT_URLS.split(',') : [])
+].filter(Boolean);
+
 const io = socketIO(server, {
   cors: {
-    origin: process.env.CLIENT_URL,
-    credentials: true
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      console.log(`❌ WebSocket CORS: Blocked origin: ${origin}`);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST']
   }
 });
 
