@@ -3,13 +3,21 @@ const redis = require('redis');
 let redisClient = null;
 
 const connectRedis = async () => {
-  // If REDIS_URL contains credentials (rediss:// or redis:// with @), use only URL
-  // Otherwise, use separate password option
   const redisUrl = process.env.REDIS_URL;
-  const hasCredentialsInUrl = redisUrl && (redisUrl.includes('@') || redisUrl.includes('://'));
+  const isUpstash = redisUrl && redisUrl.startsWith('rediss://');
   
-  const clientOptions = hasCredentialsInUrl
-    ? { url: redisUrl }
+  // For Upstash Redis (rediss://), configure TLS
+  // For local Redis or other providers, use standard config
+  const clientOptions = isUpstash
+    ? {
+        url: redisUrl,
+        socket: {
+          tls: true,
+          rejectUnauthorized: false // Upstash uses self-signed certificates
+        }
+      }
+    : redisUrl && redisUrl.includes('@')
+    ? { url: redisUrl } // URL with embedded credentials
     : {
         url: redisUrl || 'redis://localhost:6379',
         password: process.env.REDIS_PASSWORD || undefined
