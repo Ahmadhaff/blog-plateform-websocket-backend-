@@ -11,7 +11,31 @@ const socketAuth = async (socket, next) => {
       return next(new Error('Authentication token required'));
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    try {
+      // Try with platform-server's JWT_SECRET first
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      // If verification fails, try with admin-panel-server's JWT_SECRET (if provided)
+      // This allows admin tokens to work with WebSocket server
+      if (process.env.ADMIN_JWT_SECRET && error.name === 'JsonWebTokenError') {
+        try {
+          decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+        } catch (adminError) {
+          console.error('❌ [socketAuth] Token verification failed with both secrets');
+          return next(new Error('Invalid authentication token'));
+        }
+      } else {
+        if (error.name === 'TokenExpiredError') {
+          return next(new Error('Token expired'));
+        }
+        if (error.name === 'JsonWebTokenError') {
+          return next(new Error('Invalid token'));
+        }
+        console.error('❌ [socketAuth] Error verifying token:', error);
+        return next(new Error('Invalid authentication token'));
+      }
+    }
 
     // Be tolerant to different payload keys
     const userId =
