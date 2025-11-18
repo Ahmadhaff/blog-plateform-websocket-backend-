@@ -12,13 +12,11 @@ const notificationHandler = require('./handlers/notificationHandler');
 const typingHandler = require('./handlers/typingHandler');
 const articleHandler = require('./handlers/articleHandler');
 
-// Create server without handler - let Socket.IO handle requests
+// Create HTTP server
 const server = http.createServer();
 
-// Add health check endpoint as a request listener (runs before Socket.IO)
+// Health check endpoint
 server.on('request', (req, res) => {
-  // Health check endpoint for Render.com and monitoring
-  // This prevents Render.com from marking the service as inactive
   if (req.url === '/health' || req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
@@ -30,25 +28,19 @@ server.on('request', (req, res) => {
     return;
   }
 
-  // For non-Socket.IO paths, return 404
-  // Socket.IO will handle /socket.io/* paths - don't interfere
+  // Socket.IO handles /socket.io/* paths
   if (!req.url.startsWith('/socket.io/')) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Not found' }));
-    return;
   }
-  
-  // For Socket.IO paths, we need to let Socket.IO handle them
-  // Socket.IO attaches its own listener, so it will process this request
-  // We don't end the response here - Socket.IO will handle it
 });
 
-// Configure CORS for WebSocket
+// CORS configuration
 const allowedOrigins = [
-  'http://localhost:4200',  // Main frontend (dev)
-  'http://localhost:4201',  // Admin panel frontend (dev)
-  'https://blogplateform.netlify.app',  // Main frontend (production)
-  'https://adminpanelblogapp.netlify.app',  // Admin panel frontend (production)
+  'http://localhost:4200',
+  'http://localhost:4201',
+  'https://blogplateform.netlify.app',
+  'https://adminpanelblogapp.netlify.app',
   process.env.CLIENT_URL,
   ...(process.env.CLIENT_URLS ? process.env.CLIENT_URLS.split(',') : [])
 ].filter(Boolean);
@@ -60,23 +52,19 @@ const io = socketIO(server, {
         return callback(null, true);
       }
       console.log(`❌ WebSocket CORS: Blocked origin: ${origin}`);
-      console.log(`✅ Allowed origins:`, allowedOrigins);
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Authorization', 'Content-Type']
   },
-  // Better compatibility with Render.com and proxies
-  transports: ['polling', 'websocket'], // Polling first for better proxy compatibility
-  allowEIO3: true, // Allow Engine.IO v3 clients
-  pingTimeout: 60000, // 60 seconds (longer for production)
-  pingInterval: 25000, // 25 seconds
-  upgradeTimeout: 30000, // 30 seconds for upgrade to websocket
-  // Handle connection state properly
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  upgradeTimeout: 30000,
   connectionStateRecovery: {
-    // Enable connection state recovery
-    maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+    maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true
   }
 });
