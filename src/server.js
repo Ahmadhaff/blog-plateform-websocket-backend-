@@ -81,13 +81,11 @@ io.on('connection', async (socket) => {
   articleHandler(socket, io);
 
   // Join user's personal room for notifications
-  socket.emit('joinUserRoom');
   socket.join(`user:${socket.userId}`);
 
-  // Get initial notification count when user connects
+  // Send initial notification count
   setTimeout(async () => {
     try {
-      const mongoose = require('mongoose');
       const NotificationCollection = mongoose.connection.collection('notifications');
       const unreadCount = await NotificationCollection.countDocuments({
         user: new mongoose.Types.ObjectId(socket.userId),
@@ -95,7 +93,7 @@ io.on('connection', async (socket) => {
       });
       socket.emit('notificationCount', { count: unreadCount });
     } catch (error) {
-      console.error(`❌ [WebSocketServer] Error sending initial notification count:`, error);
+      console.error('❌ Error sending initial notification count:', error);
     }
   }, 200);
 
