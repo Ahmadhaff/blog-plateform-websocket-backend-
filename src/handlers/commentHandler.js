@@ -1,14 +1,17 @@
 const commentHandler = (socket, io) => {
   // User joins an article room
   socket.on('joinArticle', (articleId) => {
-    socket.join(`article:${articleId}`);
-    console.log(`✅ User ${socket.username || socket.userId} joined article room ${articleId}`);
+    const roomName = `article:${articleId}`;
+    
+    // Only join if not already in room (prevents duplicate joins)
+    if (!socket.rooms.has(roomName)) {
+      socket.join(roomName);
+    }
   });
 
   // User leaves an article room
   socket.on('leaveArticle', (articleId) => {
     socket.leave(`article:${articleId}`);
-    console.log(`👋 User ${socket.username || socket.userId} left article room ${articleId}`);
   });
 
   // Typing indicator
@@ -20,11 +23,7 @@ const commentHandler = (socket, io) => {
     });
   });
 
-  // User joins their personal room for notifications
-  socket.on('joinUserRoom', () => {
-    socket.join(`user:${socket.userId}`);
-    console.log(`✅ User ${socket.username || socket.userId} joined personal room`);
-  });
+  // Note: User's personal room is already joined in socketAuth middleware
 };
 
 module.exports = commentHandler;

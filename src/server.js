@@ -72,34 +72,47 @@ const io = socketIO(server, {
 io.use(socketAuth);
 
 io.on('connection', async (socket) => {
-  const redis = getRedisClient();
-  await redis.sAdd('online-users', socket.userId.toString());
+  try {
+    const redis = getRedisClient();
+    await redis.sAdd('online-users', socket.userId.toString());
 
-  commentHandler(socket, io);
-  notificationHandler(socket, io);
-  typingHandler(socket, io);
-  articleHandler(socket, io);
+    // Initialize handlers
+    commentHandler(socket, io);
+    notificationHandler(socket, io);
+    typingHandler(socket, io);
+    articleHandler(socket, io);
 
-  // Join user's personal room for notifications
-  socket.join(`user:${socket.userId}`);
+    // Send initial notification count
+    setTimeout(async () => {
+      try {
+        const NotificationCollection = mongoose.connection.collection('notifications');
+        const unreadCount = await NotificationCollection.countDocuments({
+          user: new mongoose.Types.ObjectId(socket.userId),
+          read: false
+        });
+        socket.emit('notificationCount', { count: unreadCount });
+      } catch (error) {
+        console.error('❌ Error sending initial notification count:', error);
+      }
+    }, 200);
 
-  // Send initial notification count
-  setTimeout(async () => {
-    try {
-      const NotificationCollection = mongoose.connection.collection('notifications');
-      const unreadCount = await NotificationCollection.countDocuments({
-        user: new mongoose.Types.ObjectId(socket.userId),
-        read: false
-      });
-      socket.emit('notificationCount', { count: unreadCount });
-    } catch (error) {
-      console.error('❌ Error sending initial notification count:', error);
-    }
-  }, 200);
+    // Handle explicit disconnect event from client
+    socket.on('userDisconnect', async (data) => {
+      try {
+        await redis.sRem('online-users', socket.userId.toString());
+        console.log(`👋 User ${socket.username || socket.userId} disconnected`);
+      } catch (error) {
+        console.error('❌ Error handling user disconnect:', error);
+      }
+    });
 
-  socket.on('disconnect', async () => {
-    await redis.sRem('online-users', socket.userId.toString());
-  });
+    // Handle socket disconnect
+    socket.on('disconnect', async () => {
+      await redis.sRem('online-users', socket.userId.toString());
+    });
+  } catch (error) {
+    console.error('❌ Connection error:', error);
+  }
 });
 
 async function startServer() {
